@@ -60,7 +60,9 @@ export const getCustomMapImage = async (style: string, zoom: number, offset?: nu
  */
 export const getMapImage = async (style: string, offset?: number) => {
   const { settings } = useMapbox().value
-  const config = useRuntimeConfig()
+  if (!isMbTokenValid()) {
+    throw new Error('Invaid access token')
+  }
   let url = ''
   if (settings.angle === 0) {
     const pixels = 1280
@@ -72,7 +74,7 @@ export const getMapImage = async (style: string, offset?: number) => {
     )
     url = 'https://api.mapbox.com/styles/v1/'
     + `${style}/static/[${minX},${minY},${maxX},${maxY}`
-    + `]/${pixels}x${pixels}@2x?access_token=${settings.accessToken || config.public.mapboxToken}`
+    + `]/${pixels}x${pixels}@2x?access_token=${settings.accessToken}`
   } else {
     let decimals = 1
     let zoom = 0
@@ -98,7 +100,7 @@ export const getMapImage = async (style: string, offset?: number) => {
     url = 'https://api.mapbox.com/styles/v1/'
     + `${style}/static/`
     + `${settings.lng},${settings.lat},${roundedZoom},${bearing}`
-    + `/${pixel}x${pixel}@2x?access_token=${settings.accessToken || config.public.mapboxToken}`
+    + `/${pixel}x${pixel}@2x?access_token=${settings.accessToken}`
   }
 
   try {

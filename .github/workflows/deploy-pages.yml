@@ -53,9 +53,6 @@ jobs:
           fi
 
       - name: Generate Static Site
-        env:
-          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
-          PUBLIC_MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
         run: npm run generate
 
       - name: Configure GitHub Pages

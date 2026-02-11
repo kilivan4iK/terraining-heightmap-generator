@@ -5,6 +5,5 @@ export const isMtTokenValid = () => {
 
 export const isMbTokenValid = () => {
   const { settings } = useMapbox().value
-  const config = useRuntimeConfig()
-  return settings.accessToken && settings.accessToken !== '' && settings.accessToken !== config.public.mapboxToken
+  return settings.accessToken && settings.accessToken !== ''
 }

@@ -16,22 +16,12 @@ const defineSettings = () => {
   const store: Settings = JSON.parse(localStorage.getItem('map-settings')!) || {}
   const filteredStore = filterSettings(store)
   const mergedStore = structuredClone({ ...initialValue, ...filteredStore })
-  const config = useRuntimeConfig()
-
-  if (!mergedStore.accessToken && config.public.mapboxToken) {
-    mergedStore.accessToken = config.public.mapboxToken
-  }
 
   return mergedStore
 }
 
 const resetSettings = () => {
   const store: Settings = structuredClone(initialValue)
-  const config = useRuntimeConfig()
-
-  if (!store.accessToken && config.public.mapboxToken) {
-    store.accessToken = config.public.mapboxToken
-  }
 
   return store
 }

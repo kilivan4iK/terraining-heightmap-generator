@@ -9,6 +9,7 @@ const { debugMode } = useDebug()
 const { isMobile } = useDevice()
 
 const mapCanvas = ref<HTMLElement>()
+const showMapTokenGuide = computed(() => !mapbox.value.map && !mapbox.value.settings.accessToken)
 
 type GridState = 'none' | 'isMove' | 'isRotate' | 'isResize'
 let gridState: GridState = 'none'
@@ -486,6 +487,9 @@ onMounted(() => {
 
 <template>
   <div id="map"></div>
+  <div v-if="showMapTokenGuide" class="map-token-guide">
+    Enter your Mapbox Access Token in the Config tab, then click outside the input to apply.
+  </div>
   <slot />
 </template>
 
@@ -495,6 +499,21 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 100%;
+}
+
+.map-token-guide {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  max-width: min(30rem, calc(100vw - 24px));
+  padding: .5rem .75rem;
+  border-radius: .375rem;
+  color: $textColor;
+  font-size: .8125rem;
+  line-height: 1.3;
+  z-index: 3;
+  background-color: rgba(16, 24, 32, .72);
+  border: 1px solid rgba(255, 255, 255, .28);
 }
 
 :deep(.mapboxgl-ctrl-group) {

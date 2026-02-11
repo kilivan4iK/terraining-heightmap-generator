@@ -22,6 +22,14 @@ const onVisibillityChangeMT = () => {
   inputTokenMT.value!.type = visibillityMT.value ? 'text' : 'password'
 }
 
+const onMapboxTokenBlur = () => {
+  const token = mapbox.value.settings.accessToken?.trim() || ''
+  if (!mapbox.value.map && /^(pk|sk)\./.test(token)) {
+    saveSettings(mapbox.value.settings)
+    useEvent('map:reload')
+  }
+}
+
 async function importSettingsFromFile(file: File): Promise<Settings | null> {
   const fileReader = new FileReader()
   const fileContent: string = await new Promise((resolve, reject) => {
@@ -210,9 +218,9 @@ onMounted(() => {
       <label class="label flexible-line-height" for="use-mapbox">Use mapbox for heightmap source&#8202;:&nbsp;&nbsp;</label>
       <ToggleSwitch v-model="mapbox.settings.useMapbox" :name="'use-mapbox'" />
     </div>
-    <label for="token" class="label">Mapbox Access Token <small>(Optional)</small>&#8202;:</label>
+    <label for="token" class="label">Mapbox Access Token <small>(Required for map display)</small>&#8202;:</label>
     <div class="input-wrapper gap1">
-      <input id="token" ref="inputToken" v-model="mapbox.settings.accessToken" class="input" />
+      <input id="token" ref="inputToken" v-model="mapbox.settings.accessToken" class="input" @blur="onMapboxTokenBlur" />
       <button class="visi-icon" @click="onVisibillityChange">
         <VisibilityOff v-if="visibillity" />
         <VisibilityOn v-else />

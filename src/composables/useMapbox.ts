@@ -202,18 +202,8 @@ export const setGrid = (mapbox: Ref<Mapbox>, lnglat: LngLat, panTo: boolean) => 
 
 export const createMapInstance = () => {
   const mapbox = useMapbox()
-  const config = useRuntimeConfig()
 
   mapboxgl.workerCount = 4
-
-  mapbox.value.map = new Map({
-    accessToken: config.public.mapboxToken,
-    antialias: true,
-    container: 'map',
-    style: initialValue.style,
-    center: [mapbox.value.settings.lng, mapbox.value.settings.lat],
-    zoom: mapbox.value.settings.zoom,
-  })
 
   const gridSpec = mapSpec[mapbox.value.settings.gridInfo].grid
 
@@ -224,6 +214,19 @@ export const createMapInstance = () => {
     mapbox.value.settings.size,
     mapbox.value.settings.angle,
   )
+
+  if (!mapbox.value.settings.accessToken) {
+    return
+  }
+
+  mapbox.value.map = new Map({
+    accessToken: mapbox.value.settings.accessToken,
+    antialias: true,
+    container: 'map',
+    style: initialValue.style,
+    center: [mapbox.value.settings.lng, mapbox.value.settings.lat],
+    zoom: mapbox.value.settings.zoom,
+  })
 }
 
 export const useMapbox = () => {
