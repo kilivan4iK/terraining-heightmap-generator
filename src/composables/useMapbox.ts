@@ -205,6 +205,9 @@ export const createMapInstance = () => {
 
   mapboxgl.workerCount = 4
 
+  const token = (mapbox.value.settings.accessToken ?? '').trim()
+  mapbox.value.settings.accessToken = token
+
   const gridSpec = mapSpec[mapbox.value.settings.gridInfo].grid
 
   mapbox.value.grid = getGrid(
@@ -215,12 +218,12 @@ export const createMapInstance = () => {
     mapbox.value.settings.angle,
   )
 
-  if (!mapbox.value.settings.accessToken) {
+  if (!token) {
     return
   }
 
   mapbox.value.map = new Map({
-    accessToken: mapbox.value.settings.accessToken,
+    accessToken: token,
     antialias: true,
     container: 'map',
     style: initialValue.style,

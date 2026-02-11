@@ -16,6 +16,9 @@ const defineSettings = () => {
   const store: Settings = JSON.parse(localStorage.getItem('map-settings')!) || {}
   const filteredStore = filterSettings(store)
   const mergedStore = structuredClone({ ...initialValue, ...filteredStore })
+  mergedStore.accessToken = (mergedStore.accessToken ?? '').trim()
+  mergedStore.accessTokenMT = (mergedStore.accessTokenMT ?? '').trim()
+  mergedStore.userStyleURL = (mergedStore.userStyleURL ?? '').trim()
 
   return mergedStore
 }

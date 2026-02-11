@@ -24,10 +24,16 @@ const onVisibillityChangeMT = () => {
 
 const onMapboxTokenBlur = () => {
   const token = mapbox.value.settings.accessToken?.trim() || ''
-  if (!mapbox.value.map && /^(pk|sk)\./.test(token)) {
-    saveSettings(mapbox.value.settings)
+  mapbox.value.settings.accessToken = token
+  saveSettings(mapbox.value.settings)
+  if (/^pk\./.test(token)) {
     useEvent('map:reload')
   }
+}
+
+const onMaptilerTokenBlur = () => {
+  mapbox.value.settings.accessTokenMT = mapbox.value.settings.accessTokenMT?.trim() || ''
+  saveSettings(mapbox.value.settings)
 }
 
 async function importSettingsFromFile(file: File): Promise<Settings | null> {
@@ -207,7 +213,7 @@ onMounted(() => {
     <hr>
     <label for="token-mt" class="label">MapTiler API Key <small>(Required)</small>&#8202;:</label>
     <div class="input-wrapper gap2">
-      <input id="token-mt" ref="inputTokenMT" v-model="mapbox.settings.accessTokenMT" class="input" />
+      <input id="token-mt" ref="inputTokenMT" v-model="mapbox.settings.accessTokenMT" class="input" @blur="onMaptilerTokenBlur" />
       <button class="visi-icon" @click="onVisibillityChangeMT">
         <VisibilityOff v-if="visibillityMT" />
         <VisibilityOn v-else />
