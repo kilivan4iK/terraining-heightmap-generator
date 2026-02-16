@@ -1,8 +1,16 @@
 import mapboxgl, { Map, type GeoJSONSource } from 'mapbox-gl'
 import * as turf from '@turf/turf'
-import type { Feature, GeoJsonProperties, Position, Polygon } from 'geojson'
+import type { Feature, FeatureCollection, GeoJsonProperties, Point, Position, Polygon } from 'geojson'
 import { extentGrid } from '~/utils/extentGrid'
 import type { Mapbox, Grid, LngLat, GridPositions, GridSpec } from '~/types/types'
+
+export type GridMoveDirection = 'up' | 'right' | 'down' | 'left'
+
+type MoveMetrics = {
+  bearings: Record<GridMoveDirection, number>
+  distances: Record<GridMoveDirection, number>
+  edgeMidpoints: Record<GridMoveDirection, Position>
+}
 
 export const getGridAngle = (mapbox?: Ref<Mapbox>) => {
   const _mapbox = mapbox || useMapbox()
@@ -92,6 +100,48 @@ const fixLng = (position: Position) => {
   return { Longitude: _lng, Latitude: position[1] }
 }
 
+const toPosition = (point: { Longitude: number, Latitude: number }): Position => {
+  return [point.Longitude, point.Latitude]
+}
+
+const getMoveMetrics = (grid: Grid): MoveMetrics => {
+  const { gridCorner } = getPoint(grid)
+
+  const topLeft = toPosition(gridCorner.topleft)
+  const topRight = toPosition(gridCorner.topright)
+  const bottomLeft = toPosition(gridCorner.bottomleft)
+  const bottomRight = toPosition(gridCorner.bottomright)
+
+  const up = turf.rhumbBearing(bottomLeft, topLeft)
+  const right = turf.rhumbBearing(topLeft, topRight)
+  const down = turf.rhumbBearing(topLeft, bottomLeft)
+  const left = turf.rhumbBearing(topRight, topLeft)
+
+  const verticalDistance = turf.rhumbDistance(bottomLeft, topLeft, { units: 'kilometers' })
+  const horizontalDistance = turf.rhumbDistance(topLeft, topRight, { units: 'kilometers' })
+
+  const topMid = turf.midpoint(topLeft, topRight).geometry.coordinates as Position
+  const rightMid = turf.midpoint(topRight, bottomRight).geometry.coordinates as Position
+  const bottomMid = turf.midpoint(bottomLeft, bottomRight).geometry.coordinates as Position
+  const leftMid = turf.midpoint(topLeft, bottomLeft).geometry.coordinates as Position
+
+  return {
+    bearings: { up, right, down, left },
+    distances: {
+      up: verticalDistance,
+      right: horizontalDistance,
+      down: verticalDistance,
+      left: horizontalDistance,
+    },
+    edgeMidpoints: {
+      up: topMid,
+      right: rightMid,
+      down: bottomMid,
+      left: leftMid,
+    },
+  }
+}
+
 export const getPoint = (grid: Grid) => {
   const mapbox = useMapbox()
   const gridIndex = mapSpec[mapbox.value.settings.gridInfo].grid
@@ -123,6 +173,53 @@ export const getPoint = (grid: Grid) => {
   }
 
   return { gridCorner, playAreaCorner }
+}
+
+export const getMoveArrowPoints = (grid: Grid): FeatureCollection<Point, { direction: GridMoveDirection, icon: string }> => {
+  const metrics = getMoveMetrics(grid)
+  const iconMap: Record<GridMoveDirection, string> = {
+    up: '^',
+    right: '>',
+    down: 'v',
+    left: '<',
+  }
+
+  const baseDistance = Math.min(metrics.distances.up, metrics.distances.right)
+  const offset = Math.max(0.08, baseDistance * 0.08)
+
+  const directions: GridMoveDirection[] = ['up', 'right', 'down', 'left']
+  const features = directions.map((direction) => {
+    const point = turf.rhumbDestination(
+      metrics.edgeMidpoints[direction],
+      offset,
+      metrics.bearings[direction],
+      { units: 'kilometers' },
+    ).geometry.coordinates as Position
+
+    return turf.point(point, {
+      direction,
+      icon: iconMap[direction],
+    })
+  })
+
+  return turf.featureCollection(features)
+}
+
+export const moveGridByDirection = (mapbox: Ref<Mapbox>, direction: GridMoveDirection, panTo = true) => {
+  if (!mapbox.value.grid) {
+    return
+  }
+
+  const metrics = getMoveMetrics(mapbox.value.grid)
+  const destination = turf.rhumbDestination(
+    [mapbox.value.settings.lng, mapbox.value.settings.lat],
+    metrics.distances[direction],
+    metrics.bearings[direction],
+    { units: 'kilometers' },
+  )
+  const nextCenter = destination.geometry.coordinates as Position
+
+  setGrid(mapbox, [nextCenter[0], nextCenter[1]], panTo)
 }
 
 export const getGrid = (grid: GridSpec, lng: number, lat: number, size: number, angle: number) => {
@@ -190,6 +287,8 @@ export const setGrid = (mapbox: Ref<Mapbox>, lnglat: LngLat, panTo: boolean) => 
   (mapbox.value.map?.getSource('rotate') as GeoJSONSource).setData(mapbox.value.grid.rotateArea);
   (mapbox.value.map?.getSource('side') as GeoJSONSource).setData(mapbox.value.grid.sideLines);
   (mapbox.value.map?.getSource('direction') as GeoJSONSource).setData(mapbox.value.grid.direction)
+  const moveArrowSource = mapbox.value.map?.getSource('moveArrows') as GeoJSONSource | undefined
+  moveArrowSource?.setData(getMoveArrowPoints(mapbox.value.grid))
 
   mapbox.value.settings.zoom = mapbox.value.map!.getZoom()
 

@@ -82,9 +82,13 @@ export class HomeButton implements IControl {
 
 export class ResetGridDirection implements IControl {
   private div: HTMLDivElement | undefined
+  private map: Map | undefined
   private pressPosition: Array<number>
   private pressTimer: string | number | NodeJS.Timeout | undefined
   private _isIos: boolean
+  private gridVisible: boolean
+  private readonly gridLayerIds: string[]
+  private onStyleLoadHandler: (() => void) | undefined
 
   private clearTimer(force: boolean, e?: TouchEvent) {
     if (force) {
@@ -109,17 +113,65 @@ export class ResetGridDirection implements IControl {
     saveSettings(mapbox.value.settings)
   }
 
+  private setLayerVisibility(layerId: string, visible: boolean) {
+    if (!this.map?.getLayer(layerId)) {
+      return
+    }
+    this.map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+  }
+
+  private setGridVisibility(visible: boolean) {
+    this.gridVisible = visible
+    this.gridLayerIds.forEach((layerId) => {
+      this.setLayerVisibility(layerId, visible)
+    })
+
+    const svg = this.div?.querySelector('svg')
+    svg?.setAttribute('fill', visible ? '#F1F3F4' : '#86888A')
+  }
+
+  private toggleGridVisibility() {
+    this.setGridVisibility(!this.gridVisible)
+  }
+
+  private resetGridDirection() {
+    const startAngle = getGridAngle()
+    if (startAngle === 0) { return }
+    const mapbox = useMapbox()
+    const startTime = Date.now()
+    const duration = 1000
+
+    const rotateAnimation = () => {
+      const progress = Math.min(1, (Date.now() - startTime) / duration)
+      mapbox.value.settings.angle = startAngle * (1 - ease(progress))
+      setGrid(mapbox, [mapbox.value.settings.lng, mapbox.value.settings.lat], false)
+      if (progress < 1) {
+        requestAnimationFrame(rotateAnimation)
+      }
+    }
+
+    rotateAnimation()
+    mapbox.value.settings.angle = 0
+    setGrid(mapbox, [mapbox.value.settings.lng, mapbox.value.settings.lat], false)
+    saveSettings(mapbox.value.settings)
+  }
+
   constructor() {
+    this.map = undefined
     this.pressPosition = []
     this.pressTimer = undefined
     const { isIos } = useDevice()
     this._isIos = isIos
+    this.gridVisible = true
+    this.gridLayerIds = ['gridArea', 'playArea', 'centerArea', 'rotateArea', 'sideLines', 'directionMarker', 'moveArrowsBg', 'moveArrows']
+    this.onStyleLoadHandler = undefined
   }
 
-  onAdd() {
+  onAdd(map: Map) {
+    this.map = map
     this.div = document.createElement('div')
     this.div.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
-    this.div.innerHTML = `<button type="button" aria-label="Reset grid direction" aria-disabled="false" title="Reset grid direction">
+    this.div.innerHTML = `<button type="button" aria-label="Show or hide grid (Shift+Click: reset direction)" aria-disabled="false" title="Show or hide grid (Shift+Click: reset direction)">
       <svg xmlns="http://www.w3.org/2000/svg" height="19px" viewBox="0 0 448 512" fill="#F1F3F4"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M384 96V224H256V96H384zm0 192V416H256V288H384zM192 224H64V96H192V224zM64 288H192V416H64V288zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64z"/></svg>
       </button>`
     this.div.addEventListener('contextmenu', (e) => {
@@ -148,33 +200,30 @@ export class ResetGridDirection implements IControl {
       }, false)
     }
 
-    this.div.addEventListener('click', () => {
-      const startAngle = getGridAngle()
-      if (startAngle === 0) { return }
-      const mapbox = useMapbox()
-      const startTime = Date.now()
-      const duration = 1000
-
-      const rotateAnimation = () => {
-        const progress = Math.min(1, (Date.now() - startTime) / duration)
-        mapbox.value.settings.angle = startAngle * (1 - ease(progress))
-        setGrid(mapbox, [mapbox.value.settings.lng, mapbox.value.settings.lat], false)
-        if (progress < 1) {
-          requestAnimationFrame(rotateAnimation)
-        }
+    this.div.addEventListener('click', (e: MouseEvent) => {
+      if (e.shiftKey) {
+        this.resetGridDirection()
+        return
       }
-
-      rotateAnimation()
-      mapbox.value.settings.angle = 0
-      setGrid(mapbox, [mapbox.value.settings.lng, mapbox.value.settings.lat], false)
-      saveSettings(mapbox.value.settings)
+      this.toggleGridVisibility()
     })
+
+    this.onStyleLoadHandler = () => {
+      this.setGridVisibility(this.gridVisible)
+    }
+    this.map.on('style.load', this.onStyleLoadHandler)
+
     return this.div
   }
 
   onRemove() {
     this.pressPosition = []
     this.pressTimer = undefined
+    if (this.map && this.onStyleLoadHandler) {
+      this.map.off('style.load', this.onStyleLoadHandler)
+    }
+    this.onStyleLoadHandler = undefined
+    this.map = undefined
     while (this.div?.firstChild) {
       this.div.removeChild(this.div.firstChild)
     }

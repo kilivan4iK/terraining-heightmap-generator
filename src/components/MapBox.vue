@@ -15,12 +15,21 @@ type GridState = 'none' | 'isMove' | 'isRotate' | 'isResize'
 let gridState: GridState = 'none'
 let prevAngle = 0
 let animationFrameId: number | null = null
+let skipNextMapClick = false
 
 const maxSize = computed(() => (mapSpec[mapbox.value.settings.gridInfo].defaultSize || 50.000) * 4)
 const minSize = computed(() => (mapSpec[mapbox.value.settings.gridInfo].defaultSize || 1.000) / 2)
 
 onMounted(() => {
   createMapInstance()
+
+  const isMoveArrowClick = (point: any) => {
+    const map = mapbox.value.map
+    if (!map || !map.getLayer('moveArrowsBg') || !map.getLayer('moveArrows')) {
+      return false
+    }
+    return map.queryRenderedFeatures(point, { layers: ['moveArrowsBg', 'moveArrows'] }).length > 0
+  }
 
   mapbox.value.map?.on('load', () => {
     mapCanvas.value = mapbox.value.map!.getCanvasContainer()
@@ -43,6 +52,13 @@ onMounted(() => {
   })
 
   mapbox.value.map?.on('click', (e) => {
+    if (skipNextMapClick) {
+      skipNextMapClick = false
+      return
+    }
+    if (isMoveArrowClick(e.point)) {
+      return
+    }
     setGrid(mapbox, [e.lngLat.lng, e.lngLat.lat], true)
   })
 
@@ -76,6 +92,10 @@ onMounted(() => {
     mapbox.value.map?.addSource('direction', {
       type: 'geojson',
       data: mapbox.value.grid!.direction,
+    })
+    mapbox.value.map?.addSource('moveArrows', {
+      type: 'geojson',
+      data: getMoveArrowPoints(mapbox.value.grid!),
     })
     mapbox.value.map?.addSource('terrain-dem', {
       type: 'raster-dem',
@@ -167,6 +187,35 @@ onMounted(() => {
         'line-width': 0.5,
         'line-color': gridColor,
         'line-opacity': 0.7,
+      },
+    })
+    mapbox.value.map?.addLayer({
+      id: 'moveArrowsBg',
+      type: 'circle',
+      source: 'moveArrows',
+      paint: {
+        'circle-radius': isMobile ? 14 : 12,
+        'circle-color': 'rgba(20, 28, 38, 0.78)',
+        'circle-stroke-color': '#7FFFD4',
+        'circle-stroke-width': 1.4,
+        'circle-opacity': 0.82,
+      },
+    })
+    mapbox.value.map?.addLayer({
+      id: 'moveArrows',
+      type: 'symbol',
+      source: 'moveArrows',
+      layout: {
+        'text-field': ['get', 'icon'],
+        'text-size': isMobile ? 15 : 14,
+        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-color': '#F1F3F4',
+        'text-halo-color': 'rgba(0, 0, 0, 0.45)',
+        'text-halo-width': 1,
       },
     })
   }
@@ -390,6 +439,31 @@ onMounted(() => {
   }
 
   function setMouse() {
+    const isMoveDirection = (value: unknown): value is 'up' | 'right' | 'down' | 'left' => {
+      return value === 'up' || value === 'right' || value === 'down' || value === 'left'
+    }
+
+    const setMoveArrowHover = (active: boolean) => {
+      const opacity = active ? 1 : 0.82
+      mapbox.value.map?.setPaintProperty('moveArrowsBg', 'circle-opacity', opacity)
+    }
+
+    const onMoveArrowClick = (e: any) => {
+      if (gridState !== 'none') {
+        return
+      }
+      skipNextMapClick = true
+      e.preventDefault()
+      e.originalEvent?.stopPropagation?.()
+
+      const feature = e.features?.[0]
+      const directionValue = feature?.properties?.direction as string | undefined
+      if (!isMoveDirection(directionValue)) {
+        return
+      }
+      moveGridByDirection(mapbox, directionValue, true)
+    }
+
     // centerArea - move
     mapbox.value.map?.on('mouseenter', 'centerArea', () => {
       mapbox.value.map!.setPaintProperty('centerArea', 'fill-opacity', 0.3)
@@ -481,6 +555,28 @@ onMounted(() => {
         mapbox.value.map!.once('touchend', onResizeEnd)
       }
     })
+
+    mapbox.value.map?.on('mouseenter', 'moveArrowsBg', () => {
+      setMoveArrowHover(true)
+      mapCanvas.value!.style.cursor = 'pointer'
+    })
+
+    mapbox.value.map?.on('mouseleave', 'moveArrowsBg', () => {
+      setMoveArrowHover(false)
+      mapCanvas.value!.style.cursor = ''
+    })
+
+    mapbox.value.map?.on('mouseenter', 'moveArrows', () => {
+      setMoveArrowHover(true)
+      mapCanvas.value!.style.cursor = 'pointer'
+    })
+
+    mapbox.value.map?.on('mouseleave', 'moveArrows', () => {
+      setMoveArrowHover(false)
+      mapCanvas.value!.style.cursor = ''
+    })
+
+    mapbox.value.map?.on('click', 'moveArrowsBg', onMoveArrowClick)
   }
 })
 </script>
