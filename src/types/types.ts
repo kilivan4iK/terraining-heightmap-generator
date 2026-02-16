@@ -20,6 +20,7 @@ const mapTypeSchema = z.union([
   z.literal('cs2play'),
   z.literal('unity'),
   z.literal('ue'),
+  z.literal('warno'),
   z.literal('ocean'),
 ])
 
@@ -32,7 +33,7 @@ const depthPointSchema = z.object({
 export type LngLat = Extract<LngLatLike, [number, number]>
 export type HeightCalcType = 'manual' | 'limit' | 'maximize'
 export type Interpolation = 'bilinear' | 'bicubic'
-export type MapType = 'cs1' | 'cs2' | 'cs2play' | 'unity' | 'ue' | 'ocean'
+export type MapType = 'cs1' | 'cs2' | 'cs2play' | 'unity' | 'ue' | 'warno' | 'ocean'
 export type StyleType = Record<'label' | 'value' | 'before' | 'grid' | 'alpha', string>
 
 export type DepthPoint = {

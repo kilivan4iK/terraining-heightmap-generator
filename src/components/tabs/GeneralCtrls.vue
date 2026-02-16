@@ -36,7 +36,7 @@ const onMapTypeChange = async () => {
   if (mapbox.value.settings.gridInfo !== 'ue') {
     mapbox.value.settings.worldPartition = false
   }
-  if (mapbox.value.settings.gridInfo === 'unity' || mapbox.value.settings.gridInfo === 'ue') {
+  if (mapbox.value.settings.gridInfo === 'unity' || mapbox.value.settings.gridInfo === 'ue' || mapbox.value.settings.gridInfo === 'warno') {
     if (mapbox.value.map?.getLayer('playArea')) {
       mapbox.value.map?.removeLayer('playArea')
       mapbox.value.map?.removeSource('play')
@@ -114,6 +114,7 @@ const onCellsChange = () => {
         { value: 'cs2', label: 'CS2' },
         { value: 'unity', label: 'Unity' },
         { value: 'ue', label: 'UE' },
+        { value: 'warno', label: 'WARNO' },
       ]"
       @change="onMapTypeChange()"
     />

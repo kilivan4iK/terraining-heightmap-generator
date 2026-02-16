@@ -119,6 +119,15 @@ export const mapSpec: MapSpecs = {
     correction: 1,
     grid: gridEngine,
   },
+  warno: {
+    name: 'WARNO',
+    defaultSize: undefined,
+    defaultRes: 8192,
+    defaultEs: 512,
+    resolutions: [8192, 4096, 2048, 1024],
+    correction: 1,
+    grid: gridEngine,
+  },
 }
 
 export const littoralArray: LittoralArray = {

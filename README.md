@@ -12,6 +12,34 @@
 
 <br>
 
+## Run locally (Windows)
+
+### One-click start
+
+1. Install Node.js LTS.
+1. Double-click `start-local.bat` in the project root.
+1. The browser opens at `http://localhost:3000`.
+
+### PowerShell start
+
+```powershell
+cd E:\Downloads\terraining-heightmap-generator
+.\start-local.ps1
+```
+
+If PowerShell blocks local scripts:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+### API keys
+
+- **MapTiler API Key** is required and is entered by each user in the app Config tab.
+- **Mapbox Access Token** is optional and is entered by each user in the app Config tab.
+
+<br>
+
 > [!WARNING]
 > #### MapTiler API Key Requirement
 >
