@@ -139,6 +139,7 @@ export const settingsSchema = z.object({
   applyEffectAmount: z.boolean(),
   normalizePreview: z.boolean(),
   originalPreview: z.boolean(),
+  lockArea: z.boolean(),
   useMapbox: z.boolean(),
   accessToken: z.string().optional(),
   accessTokenMT: z.string().optional(),

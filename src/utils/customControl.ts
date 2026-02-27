@@ -79,6 +79,52 @@ export class HomeButton implements IControl {
   }
 }
 
+export class LockAreaButton implements IControl {
+  private div: HTMLDivElement | undefined
+
+  private updateView(locked: boolean) {
+    const button = this.div?.querySelector('button')
+    const svg = this.div?.querySelector('svg')
+    if (!button || !svg) {
+      return
+    }
+    button.setAttribute('aria-label', locked ? 'Unlock selected area' : 'Lock selected area')
+    button.setAttribute('title', locked ? 'Unlock selected area' : 'Lock selected area')
+    svg.setAttribute('fill', locked ? '#F1F3F4' : '#86888A')
+    svg.innerHTML = locked
+      ? '<path d="M400 224H376V152C376 68.2 307.8 0 224 0S72 68.2 72 152v72H48C21.5 224 0 245.5 0 272V464c0 26.5 21.5 48 48 48H400c26.5 0 48-21.5 48-48V272c0-26.5-21.5-48-48-48zM120 152C120 94.7 166.7 48 224 48s104 46.7 104 104v72H120V152z"/>'
+      : '<path d="M144 144v80H80V144c0-79.5 64.5-144 144-144s144 64.5 144 144c0 10.3-.6 20.5-3.5 30.4c-2.5 8.7-11.5 13.7-20.2 11.2s-13.7-11.5-11.2-20.2c1.9-6.7 2.9-13.8 2.9-21.3c0-61.9-50.1-112-112-112S112 82.1 112 144v80H400c26.5 0 48 21.5 48 48V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V272c0-26.5 21.5-48 48-48H144z"/>'
+  }
+
+  onAdd() {
+    this.div = document.createElement('div')
+    this.div.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
+    this.div.innerHTML = `<button type="button" aria-label="Lock selected area" aria-disabled="false" title="Lock selected area" style="padding-bottom:1px">
+      <svg xmlns="http://www.w3.org/2000/svg" height="19px" viewBox="0 0 448 512" fill="#86888A"></svg>
+      </button>`
+    this.div.addEventListener('contextmenu', e => e.preventDefault())
+
+    const mapbox = useMapbox()
+    this.updateView(Boolean(mapbox.value.settings.lockArea))
+
+    this.div.addEventListener('click', () => {
+      const next = !mapbox.value.settings.lockArea
+      mapbox.value.settings.lockArea = next
+      this.updateView(next)
+      saveSettings(mapbox.value.settings)
+    })
+
+    return this.div
+  }
+
+  onRemove() {
+    while (this.div?.firstChild) {
+      this.div.removeChild(this.div.firstChild)
+    }
+    this.div?.parentNode?.removeChild(this.div)
+  }
+}
+
 
 export class ResetGridDirection implements IControl {
   private div: HTMLDivElement | undefined

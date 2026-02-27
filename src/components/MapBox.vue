@@ -19,6 +19,7 @@ let skipNextMapClick = false
 
 const maxSize = computed(() => (mapSpec[mapbox.value.settings.gridInfo].defaultSize || 50.000) * 4)
 const minSize = computed(() => (mapSpec[mapbox.value.settings.gridInfo].defaultSize || 1.000) / 2)
+const isAreaLocked = computed(() => Boolean(mapbox.value.settings.lockArea))
 
 onMounted(() => {
   createMapInstance()
@@ -54,6 +55,9 @@ onMounted(() => {
   mapbox.value.map?.on('click', (e) => {
     if (skipNextMapClick) {
       skipNextMapClick = false
+      return
+    }
+    if (isAreaLocked.value) {
       return
     }
     if (isMoveArrowClick(e.point)) {
@@ -277,6 +281,12 @@ onMounted(() => {
     )
   }
 
+  const addLockAreaButton = () => {
+    mapbox.value.map?.addControl(
+      new LockAreaButton(), isMobile ? 'top-right' : 'bottom-right',
+    )
+  }
+
   const addNavigationControl = () => {
     mapbox.value.map?.addControl(
       new NavigationControl({
@@ -309,11 +319,13 @@ onMounted(() => {
       addHomeButton()
       addNavigationControl()
       addResetGridDirection()
+      addLockAreaButton()
       addStyleButton()
       addEffectArea()
     } else {
       addEffectArea()
       addStyleButton()
+      addLockAreaButton()
       addResetGridDirection()
       addNavigationControl()
       addHomeButton()
@@ -321,6 +333,9 @@ onMounted(() => {
   }
 
   function onMove(e: any) {
+    if (isAreaLocked.value) {
+      return
+    }
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId)
     }
@@ -346,6 +361,9 @@ onMounted(() => {
   }
 
   function onRotate(e: any) {
+    if (isAreaLocked.value) {
+      return
+    }
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId)
     }
@@ -407,6 +425,9 @@ onMounted(() => {
   }
 
   function onResize(e: any) {
+    if (isAreaLocked.value) {
+      return
+    }
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId)
     }
@@ -449,6 +470,9 @@ onMounted(() => {
     }
 
     const onMoveArrowClick = (e: any) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState !== 'none') {
         return
       }
@@ -466,6 +490,10 @@ onMounted(() => {
 
     // centerArea - move
     mapbox.value.map?.on('mouseenter', 'centerArea', () => {
+      if (isAreaLocked.value) {
+        mapCanvas.value!.style.cursor = ''
+        return
+      }
       mapbox.value.map!.setPaintProperty('centerArea', 'fill-opacity', 0.3)
       mapCanvas.value!.style.cursor = 'move'
     })
@@ -476,6 +504,9 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('mousedown', 'centerArea', (e) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState === 'none') {
         e.preventDefault()
         mapCanvas.value!.style.cursor = 'grab'
@@ -486,6 +517,9 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('touchstart', 'centerArea', (e) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState === 'none') {
         if (e.points.length !== 1) { return }
         e.preventDefault()
@@ -496,6 +530,10 @@ onMounted(() => {
 
     // rotateArea - rotate
     mapbox.value.map?.on('mouseenter', 'rotateArea', () => {
+      if (isAreaLocked.value) {
+        mapCanvas.value!.style.cursor = ''
+        return
+      }
       mapbox.value.map!.setPaintProperty('rotateArea', 'fill-color', 'rgba(0, 0, 0, 0)')
       mapCanvas.value!.style.cursor = 'move'
     })
@@ -506,6 +544,9 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('mousedown', 'rotateArea', (e) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState === 'none') {
         e.preventDefault()
         onRotateStart(e)
@@ -515,6 +556,9 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('touchstart', 'rotateArea', (e) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState === 'none') {
         if (e.points.length !== 1) { return }
         e.preventDefault()
@@ -526,6 +570,10 @@ onMounted(() => {
 
     // sideLines - resize
     mapbox.value.map?.on('mouseenter', 'sideLines', () => {
+      if (isAreaLocked.value) {
+        mapCanvas.value!.style.cursor = ''
+        return
+      }
       mapbox.value.map!.setPaintProperty('sideLines', 'line-width', 5)
       mapbox.value.map!.setPaintProperty('sideLines', 'line-opacity', 0.3)
       mapCanvas.value!.style.cursor = 'move'
@@ -538,6 +586,9 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('mousedown', 'sideLines', (e) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState === 'none') {
         e.preventDefault()
         onResizeStart(e)
@@ -547,6 +598,9 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('touchstart', 'sideLines', (e) => {
+      if (isAreaLocked.value) {
+        return
+      }
       if (gridState === 'none') {
         if (e.points.length !== 1) { return }
         e.preventDefault()
@@ -557,6 +611,10 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('mouseenter', 'moveArrowsBg', () => {
+      if (isAreaLocked.value) {
+        mapCanvas.value!.style.cursor = ''
+        return
+      }
       setMoveArrowHover(true)
       mapCanvas.value!.style.cursor = 'pointer'
     })
@@ -567,6 +625,10 @@ onMounted(() => {
     })
 
     mapbox.value.map?.on('mouseenter', 'moveArrows', () => {
+      if (isAreaLocked.value) {
+        mapCanvas.value!.style.cursor = ''
+        return
+      }
       setMoveArrowHover(true)
       mapCanvas.value!.style.cursor = 'pointer'
     })

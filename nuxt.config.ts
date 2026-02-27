@@ -8,6 +8,8 @@ import type { OutputOptions } from 'rollup'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 const appBaseURL = process.env.NUXT_APP_BASE_URL ?? '/'
+const VUE_EXPORT_HELPER_ID = '\0plugin-vue:export-helper'
+const MALFORMED_VUE_EXPORT_HELPER_RE = /[\\/]\s*plugin-vue:export-helper$/
 
 export default defineNuxtConfig({
   devtools: {
@@ -81,6 +83,16 @@ export default defineNuxtConfig({
       },
     },
     plugins: [
+      {
+        name: 'fix-plugin-vue-export-helper-id',
+        enforce: 'pre',
+        resolveId(id) {
+          if (id === VUE_EXPORT_HELPER_ID || MALFORMED_VUE_EXPORT_HELPER_RE.test(id)) {
+            return VUE_EXPORT_HELPER_ID
+          }
+          return null
+        },
+      },
       wasm(),
       topLevelAwait(),
       nodePolyfills({

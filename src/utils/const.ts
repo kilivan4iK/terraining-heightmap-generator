@@ -188,6 +188,7 @@ export const initialValue: Settings = {
   applyEffectAmount: false,
   normalizePreview: false,
   originalPreview: false,
+  lockArea: false,
   useMapbox: false,
   accessToken: '',
   accessTokenMT: '',
